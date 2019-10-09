@@ -1,109 +1,35 @@
-import React from 'react';
-import Todo from './Todo';
-import Footer from './Footer';
-import Header from './Header';
+import React, {useEffect} from 'react';
+import { connect } from 'react-redux';
+import Todo from './components/Todo';
+import Footer from './components/Footer';
+import Header from './components/Header';
 
-class App extends React.Component {
-  state = {
-    allToggled: false,
-    showContent: false,
-    todoes: [],
-    filterBy: 'All',
-  }
+import * as todoApi from './redux/sagas';
+import * as todoActions from './redux/todos';
+import * as loadingActions from './redux/loading';
+import * as selectors from './redux/store';
 
-  changeFilter = (filter) => {
-    this.setState({
-      filterBy: filter,
-    });
-  };
+const App = ( {
+  activeTodos,
+  setTodos,
+  enableLoading,
+  disableLoading,
+  isLoading,
+} ) => {
 
-  filter = (items, field) => {
-    switch (field) {
-      case 'All':
-        return items;
-      case 'Active':
-        return items.filter(item => !item.isDone);
-      case 'Completed':
-        return items.filter(item => item.isDone);
-      default:
-        return items;
-    }
-  }
+  useEffect(() => {
+    enableLoading();
 
-  toggle = (id) => {
-    this.setState(prevState => ({
-      todoes: prevState.todoes.map((todo) => {
-        if (todo.id !== id) {
-          return todo;
-        }
-
-        return {
-          ...todo,
-          isDone: !todo.isDone,
-        };
-      }),
-    }));
-  }
-
-  toggleAll = () => {
-    this.setState(prevState => ({
-      todoes: prevState.todoes
-        .map(todo => ({ ...todo, isDone: !prevState.allToggled })),
-      allToggled: !prevState.allToggled,
-    }));
-  }
-
-  addTask = (task) => {
-    if (task.length > 0) {
-      this.setState(prevState => ({
-        todoes: [...prevState.todoes, {
-          id: Date.now(),
-          title: task,
-          isDone: false,
-        }],
-        showContent: true,
-      }));
-    }
-  }
-
-  destroy = (id) => {
-    this.setState(prevState => ({
-      todoes: prevState.todoes.filter(todo => todo.id !== id),
-      showContent: !(prevState.todoes.length < 2),
-    }));
-  }
-
-  destroyCompleted = () => {
-    this.setState(prevState => ({
-      todoes: prevState.todoes.filter(todo => !todo.isDone),
-    }));
-  }
-
-  render() {
-    const {
-      showContent,
-      todoes,
-      filterBy,
-    } = this.state;
-
-    const todosCopy = this.filter(todoes, filterBy);
-
-    const resultingList = todoes.length !== 0
-      ? todosCopy.map(todo => (
-        <Todo
-          todo={todo}
-          key={todo.id}
-          toggle={this.toggle}
-          destroy={this.destroy}
-        />
-      ))
-      : '';
-
+    todoApi.getTodos()
+      .then(setTodos)
+      .finally(disableLoading);
+  }, []);
+  
     return (
       <section className="todoapp">
-        <Header addTask={this.addTask} />
+        <Header />
 
-        {showContent && (
+        {(
           <div className="content-group">
 
             <section className="main">
@@ -111,7 +37,6 @@ class App extends React.Component {
                 type="checkbox"
                 id="toggle-all"
                 className="toggle-all"
-                onClick={this.toggleAll}
               />
               <label
                 htmlFor="toggle-all"
@@ -122,22 +47,29 @@ class App extends React.Component {
 
               <ul className="todo-list">
 
-                {resultingList}
-
               </ul>
             </section>
 
             <Footer
-              todoes={todoes}
-              filterBy={filterBy}
-              changeFilter={this.changeFilter}
-              destroyCompleted={this.destroyCompleted}
             />
           </div>)
         }
       </section>
     );
-  }
-}
+  };
+
+  const mapStateToProps = state => ({
+    activeTodos: selectors.getActiveTodos(state),
+    isLoading: selectors.getIsLoading(state),
+  });
+  
+  const mapDispatchToProps = dispatch => ({
+    setTodos: todos => dispatch(todoActions.setTodos(todos)),
+    enableLoading: () => dispatch(loadingActions.enableLoading()),
+    disableLoading: () => dispatch(loadingActions.disableLoading()),
+    toggleAll: isToggleAll => dispatch(todoActions.toggleAll(isToggleAll)),
+  });
+  
+  export default connect(mapStateToProps, mapDispatchToProps)(App);
 
 export default App;
