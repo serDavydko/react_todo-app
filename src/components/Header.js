@@ -1,11 +1,9 @@
 import React, {useState} from 'react';
 import { connect } from 'react-redux';
 
-import * as todoApi from './redux/sagas';
-import * as todoActions from './redux/todos';
-import * as loadingActions from './redux/loading';
+import * as todoActions from '../redux/todos';
 
-const Header = ({ addTodo, enableLoading, disableLoading }) => {
+const Header = ({ addTodosRequest }) => {
 const [title, setTitle] = useState("");
 
 const handleTitleChange = event => {
@@ -15,7 +13,8 @@ const handleTitleChange = event => {
 const handleSubmit = e => {
     e.preventDefault();
     if (title) {
-      addTodo();
+      addTodosRequest({title:title, isDone: false});
+      setTitle("");
     }
   };
 
@@ -39,11 +38,7 @@ const handleSubmit = e => {
   };
 
   const mapDispatchToProps = dispatch => ({
-    addTodo: value => dispatch(todoActions.addTodo(value)),
-    enableLoading: () => dispatch(loadingActions.enableLoading()),
-    disableLoading: () => dispatch(loadingActions.disableLoading()),
+    addTodosRequest: (body) => dispatch(todoActions.addTodosRequest(body)),
   });
   
-  export default connect(null, mapDispatchToProps)(AddTodoForm);
-
-export default Header;
+  export default connect(null, mapDispatchToProps)(Header);

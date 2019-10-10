@@ -11,25 +11,19 @@ import * as selectors from './redux/store';
 
 const App = ( {
   activeTodos,
-  setTodos,
-  enableLoading,
-  disableLoading,
-  isLoading,
+  setTodosRequest,
 } ) => {
 
   useEffect(() => {
-    enableLoading();
-
-    todoApi.getTodos()
-      .then(setTodos)
-      .finally(disableLoading);
+    setTodosRequest();
   }, []);
   
+  console.log(activeTodos)
     return (
       <section className="todoapp">
         <Header />
 
-        {(
+        {activeTodos.length!==0 &&(
           <div className="content-group">
 
             <section className="main">
@@ -46,7 +40,9 @@ const App = ( {
               </label>
 
               <ul className="todo-list">
-
+                {activeTodos.map(todo => (
+                  <Todo key={todo.id} todo={todo}/>
+                ))}
               </ul>
             </section>
 
@@ -60,16 +56,13 @@ const App = ( {
 
   const mapStateToProps = state => ({
     activeTodos: selectors.getActiveTodos(state),
-    isLoading: selectors.getIsLoading(state),
   });
   
   const mapDispatchToProps = dispatch => ({
+    setTodosRequest: () => dispatch(todoActions.setTodosRequest()),
     setTodos: todos => dispatch(todoActions.setTodos(todos)),
-    enableLoading: () => dispatch(loadingActions.enableLoading()),
-    disableLoading: () => dispatch(loadingActions.disableLoading()),
     toggleAll: isToggleAll => dispatch(todoActions.toggleAll(isToggleAll)),
   });
   
   export default connect(mapStateToProps, mapDispatchToProps)(App);
 
-export default App;

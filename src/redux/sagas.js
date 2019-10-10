@@ -1,105 +1,87 @@
-import { put, takeLatest, all } from 'redux-saga/effects';
+import { put, takeEvery, call, all, fork } from 'redux-saga/effects';
+import * as loaders from './loading';
+import * as todos from './todos';
+
 
 const API_URL = 'https://user-hobby-api.herokuapp.com';
 
 function* watchFetchTodos() {
-    yield takeEvery('ADD_TODO_REQUEST', fetchTodosAsync);
+    yield takeEvery('SET_TODOS_REQUEST', fetchTodosAsync);
   }
   
 function* fetchTodosAsync() {
     try {
-      yield put(requestTodos());
+      yield put(loaders.setTodosRequest());
       const data = yield call(() => {
         return fetch(`${API_URL}/tasks`)
                 .then(res => res.json())
         }
       );
-      yield put(requestTodosSuccess(data));
+      yield put(todos.setTodos(data));
+      yield put(loaders.setTodosSuccess());
     } catch (error) {
-      yield put(requestTodosError());
+      yield put(loaders.setTodosError());
+    };
+  };
+
+function* watchSendTodo() {
+    yield takeEvery('ADD_TODOS_REQUEST', sendTodoAsync);
+}
+  
+function* sendTodoAsync(action) {
+
+    try {
+      yield put(loaders.setTodosRequest());
+      const data = yield call(() => {
+        return fetch(`${API_URL}/tasks`,{
+          method: 'post',
+          body: JSON.stringify(action.body),
+          headers: {
+            'content-type': 'application/json',
+          },
+        })
+             .then(res => res.json())
+        }
+      );
+      yield put(todos.addTodo(data.title, data.id));
+      yield put(loaders.setTodosSuccess());
+    } catch (error) {
+      yield put(loaders.setTodosError());
+    };
+  };
+
+  function* watchToggleTodo() {
+    yield takeEvery('TOGGLE_TODO_REQUEST', toggleTodoAsync);
+}
+  
+function* toggleTodoAsync(action) {
+
+    try {
+      yield put(loaders.setTodosRequest());
+      const data = yield call(() => {
+        return fetch(`${API_URL}/tasks/${action.body.id}`,{
+          method: 'put',
+          body: {
+            'isDone': !action.body.isDone,
+          },
+          headers: {
+            'content-type': 'application/json',
+          },
+        })
+             .then(res => res.json())
+        }
+      );
+      yield put(todos.toggleTodo(action.body.id));
+      yield put(loaders.setTodosSuccess());
+    } catch (error) {
+      yield put(loaders.setTodosError());
     };
   };
 
 export default function* rootSaga() {
     yield all([
-    watchFetchTodos(),
+    fork(watchFetchTodos),
+    fork(watchSendTodo),
+    fork(watchToggleTodo),
     ]);
  };
-
-/* 
-const patchToServer = async(todoId, body) => fetch(
-  `${API_URL}/tasks/${todoId}`,
-  {
-    method: 'PATCH',
-    headers: { 'Content-Type': 'application/json; charset=utf-8' },
-    body: JSON.stringify(body),
-  }
-);
-
-export const getTodos = async() => {
-  const response = await fetch(`${API_URL}/tasks`);
-
-  return response.json();
-};
-
-export const updateTodoTitle = (todoId, newTitleOfTodo) => {
-  patchToServer(todoId, { title: newTitleOfTodo });
-};
-
-export const toggleAll = async(allCompleted, todoIds) => {
-  try {
-    const fetchedTodo = async(todoId) => {
-      await patchToServer(todoId, { completed: !allCompleted });
-    };
-
-    await Promise.all(
-      todoIds.map(todoId => fetchedTodo(todoId))
-    );
-
-    return 'success fetching toggleAll';
-  } catch {
-    return 'error while fetching toggleAll';
-  }
-};
-
-export const toggleTodo = async(todo) => {
-  try {
-    await patchToServer(todo.id, { completed: !todo.completed });
-
-    return 'success fetching todoToggle';
-  } catch {
-    return 'error while fetching todoToggle';
-  }
-};
-
-export const removeTodo = async(id) => {
-  const response = await fetch(`${API_URL}/tasks/${id}`, {
-    method: 'DELETE',
-  });
-
-  return response.json();
-};
-
-export const removeCompleted = async(completed) => {
-  try {
-    await Promise.all(
-      completed.map(todo => removeTodo(todo.id))
-    );
-
-    return 'success remove completed todos';
-  } catch {
-    return 'error while remove completed todos';
-  }
-};
-
-export const addTodoOnServer = async(title) => {
-  const response = await fetch(`${API_URL}/tasks`, {
-    method: 'POST',
-    body: JSON.stringify({ title }),
-    headers: {
-      'Content-Type': 'application/json; charset=utf-8',
-    },
-  });
-
-  return response.json();
-}; */

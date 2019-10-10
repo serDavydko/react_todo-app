@@ -1,8 +1,12 @@
 import React from 'react';
-import PropTypes from 'prop-types';
+import { connect } from 'react-redux';
 
-const Todo = ({ todo, toggle, destroy }) => {
-  const { id, title, isDone } = todo;
+import * as todoApi from './redux/sagas';
+import * as todoActions from '../redux/todos';
+import * as loadingActions from './redux/loading';
+import * as selectors from './redux/store';
+
+const Todo = ({deleteTodoRequest, toggleTodoRequest, todo }) => {
 
   return (
     <li className="todo">
@@ -10,48 +14,38 @@ const Todo = ({ todo, toggle, destroy }) => {
         <input
           type="checkbox"
           className="toggle"
-          id={id}
-          onClick={() => toggle(id)}
-          checked={isDone}
+          id={todo.id}
+          onClick={() => toggleTodoRequest(todo)}
+          checked={todo.isDone}
         />
         <label
-          htmlFor={id}
-          className={isDone && 'completed-item'}
+          htmlFor={todo.id}
+          className={todo.isDone && 'completed-item'}
         >
-          {title}
+          {todo.title}
 
           <input
             type="checkbox"
             className="toggle"
-            id={id}
-            onClick={() => toggle(id)}
-            checked={isDone}
+            id={todo.id}
+            onClick={() => toggleTodoRequest(todo)}
+            checked={todo.isDone}
           />
         </label>
 
         <button
           type="button"
           className="destroy"
-          onClick={() => destroy(id)}
+          onClick={() => deleteTodoRequest(todo.id)}
         />
       </div>
     </li>
   );
 };
 
-Todo.propTypes = {
-  todo: PropTypes.shape({
-    id: PropTypes.number.isRequired,
-    title: PropTypes.string.isRequired,
-    idDone: PropTypes.bool.isRequired,
-  }).isRequired,
-  toggle: PropTypes.func,
-  destroy: PropTypes.func,
-};
+const mapDispatchToProps = dispatch => ({
+  toggleTodoRequest: body => dispatch(todoActions.toggleTodoRequest(body)),
+  deleteTodoRequest: id => dispatch(todoActions.deleteTodoRequest(id)),
+});
 
-Todo.defaultProps = {
-  toggle: null,
-  destroy: null,
-};
-
-export default Todo;
+export default connect(false, mapDispatchToProps)(Todo);
